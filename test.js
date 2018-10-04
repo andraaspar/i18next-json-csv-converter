@@ -1,5 +1,5 @@
 const test = require('ava')
-const { json2Csv, csv2Json, separator } = require('./index.js')
+const { json2Csv, csv2Json, separator, diffCsv } = require('./index.js')
 
 test('json2Csv: Works.', t => {
 	const json = {
@@ -47,4 +47,56 @@ test('csv2Json: Supports nesting.', t => {
 		}
 	}
 	t.deepEqual(csv2Json(`"foo${separator}bar","baz"`), json)
+})
+
+test('diffCsv: Finds changes.', t => {
+	const a = [
+		`"foo","a"`,
+		`"bar","b"`,
+		`"baz","c"`,
+	].join('\n')
+	const b = [
+		`"nuff","o"`,
+		`"foo","d"`,
+		`"bar","b"`,
+		`"baz","c"`,
+		`"quux","e"`,
+	].join('\n')
+	const result = [
+		`"nuff","o","CHANGED"`,
+		`"foo","d","CHANGED"`,
+		`"bar","b",""`,
+		`"baz","c",""`,
+		`"quux","e","CHANGED"`,
+	].join('\n')
+	t.is(diffCsv(a, b), result)
+})
+
+test('diffCsv: Uses master.', t => {
+	const a = [
+		`"foo","a"`,
+		`"bar","b"`,
+		`"baz","c"`,
+	].join('\n')
+	const b = [
+		`"nuff","o"`,
+		`"foo","a"`,
+		`"bar","d"`,
+		`"baz","c"`,
+		`"quux","e"`,
+	].join('\n')
+	const master = [
+		`"nuff","1"`,
+		`"foo","2"`,
+		`"baz","4"`,
+		`"quux","5"`,
+	].join('\n')
+	const result = [
+		`"nuff","o","CHANGED","1"`,
+		`"foo","a","","2"`,
+		`"bar","d","CHANGED",""`,
+		`"baz","c","","4"`,
+		`"quux","e","CHANGED","5"`,
+	].join('\n')
+	t.is(diffCsv(a, b, master), result)
 })
